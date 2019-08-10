@@ -17,6 +17,7 @@ class HbaseIngester(spark : SparkSession) {
     val inputFile = args(0)
     val format = args(1)
     val hbaseTable = args(2)
+
     validation(inputFile,format,hbaseTable)
     val rawDf = readFileTODf(inputFile,format)
     writeToHbase(rawDf.selectExpr( "col1", "cast(col2 as string) as col2","cast(col3 as string) as col3"),hbaseTable)

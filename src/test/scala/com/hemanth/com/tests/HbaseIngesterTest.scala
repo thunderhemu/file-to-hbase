@@ -120,6 +120,25 @@ class HbaseIngesterTest extends FunSuite with BeforeAndAfterAll with BeforeAndAf
     df.show()
     df.printSchema()
   }
+
+  test("writeto hbase - parquet ") {
+    val inputdf = spark.read.format("csv").option("header", "true").load("src/test/resources/input/test1.csv")
+    inputdf.write.mode("overwrite").parquet("src/test/resources/input/test3")
+    val catalogRead =    s"""{
+                            |"table":{"namespace":"default", "name":"${tableName}"},
+                            |"rowkey":"col1",
+                            |"columns":{
+                            |"col1":{"cf":"rowkey", "col":"col1", "type":"string"},
+                            |"col2":{"cf":"d", "col":"col2", "type":"string"},
+                            |"col3":{"cf":"d", "col":"col3", "type":"string"}
+                            |}
+                            |}""".stripMargin
+    new HbaseIngester(spark).process(Array("src/test/resources/input/test3","parquet",tableName))
+    val df = spark.read.options(Map(HBaseTableCatalog.tableCatalog -> catalogRead)).format("org.apache.spark.sql.execution.datasources.hbase").load
+    df.show()
+    df.printSchema()
+  }
+
   test("invalid number arguments"){
     val thrown = intercept[Exception] {
       new HbaseIngester(spark).process(Array("one"))
@@ -154,8 +173,6 @@ class HbaseIngesterTest extends FunSuite with BeforeAndAfterAll with BeforeAndAf
     }
     assert(thrown.getMessage == "Invalid file format, this format is not supported at the moment")
   }
-
-
 
 
 }
